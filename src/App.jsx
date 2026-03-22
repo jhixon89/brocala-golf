@@ -744,7 +744,7 @@ export default function BrocalaGolf(){
       </div>)}
 
       {/* HEADER */}
-      <div style={{position:"relative",zIndex:10,background:"linear-gradient(180deg,rgba(10,26,12,.99) 0%,rgba(5,14,6,.97) 100%)",borderBottom:"1px solid rgba(201,162,39,.2)",boxShadow:"0 4px 40px rgba(0,0,0,.6)"}}>
+      <div style={{position:"relative",zIndex:10,background:"#1e4d26",borderBottom:"1px solid rgba(201,162,39,.2)",boxShadow:"0 2px 12px rgba(0,0,0,.2)"}}>
         <div style={{height:3,background:`linear-gradient(90deg,transparent,${C.gold},${C.goldLight},${C.gold},transparent)`}}/>
         <div style={{maxWidth:720,margin:"0 auto",padding:"20px 24px 0"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
