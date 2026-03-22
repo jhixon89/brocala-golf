@@ -34,9 +34,9 @@ const SEED_SCHEDULE = [{
 }];
 
 const C = {
-  bg:"#d8edd8", bgMid:"#c8e4c8", card:"#b8d8b8", cardMid:"#a8cca8",
+  bg:"#1e4d26", bgMid:"#1a4422", card:"#163b1e", cardMid:"#12321a",
   green:"#1a4d24", greenLight:"#2a6b34", greenGlow:"#3a8f44", greenBright:"#4db860",
-  cream:"#f5f0e8", creamDim:"#c8bfa8", creamMuted:"#7a7060",
+  cream:"#f5f0e8", creamDim:"#c8bfa8", creamMuted:"#8a9e8a",
   gold:"#c9a227", goldLight:"#e8c04a", goldDim:"#7a5f10",
   danger:"#c04040", success:"#2a8a3a", pending:"#1a5a28", pendingLight:"#4db860",
 };
@@ -143,7 +143,7 @@ function avatarColor(n){let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const css=`
   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0}body{background:#d8edd8}
+  *{box-sizing:border-box;margin:0;padding:0}body{background:#1e4d26}
   input,select,textarea{font-family:'DM Sans',sans-serif}
   ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#4db860;border-radius:2px}
   .rh{transition:all .2s}.rh:hover{transform:translateX(3px);background:rgba(42,107,52,.2)!important;border-color:rgba(77,184,96,.35)!important}
@@ -705,8 +705,7 @@ export default function BrocalaGolf(){
   return(
     <div style={{minHeight:"100vh",background:C.bg,fontFamily:"'DM Sans',sans-serif",color:C.cream,position:"relative"}}>
       <style>{css}</style>
-      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,backgroundImage:`linear-gradient(rgba(42,107,52,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(42,107,52,.08) 1px,transparent 1px)`,backgroundSize:"40px 40px"}}/>
-      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,background:"radial-gradient(ellipse 80% 50% at 50% 0%,rgba(77,184,96,.18) 0%,transparent 70%)"}}/>
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,background:"linear-gradient(180deg,#2d6a35 0%,#1e4d26 100%)"}}/>
 
       {toast&&<div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:1000,background:toastBg,backdropFilter:"blur(10px)",border:`1px solid ${toastBorder}`,borderRadius:10,padding:"12px 24px",fontSize:14,fontWeight:500,color:C.cream,boxShadow:"0 8px 30px rgba(0,0,0,.5)",whiteSpace:"nowrap",letterSpacing:.3}}>{toast.msg}</div>}
 
