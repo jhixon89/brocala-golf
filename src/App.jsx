@@ -34,7 +34,7 @@ const SEED_SCHEDULE = [{
 }];
 
 const C = {
-  bg:"#ddeeff", bgMid:"#cce4f7", card:"#c0d8f0", cardMid:"#b0cce8",
+  bg:"#d8edd8", bgMid:"#c8e4c8", card:"#b8d8b8", cardMid:"#a8cca8",
   green:"#1a4d24", greenLight:"#2a6b34", greenGlow:"#3a8f44", greenBright:"#4db860",
   cream:"#f5f0e8", creamDim:"#c8bfa8", creamMuted:"#7a7060",
   gold:"#c9a227", goldLight:"#e8c04a", goldDim:"#7a5f10",
@@ -143,9 +143,9 @@ function avatarColor(n){let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const css=`
   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0}body{background:#ddeeff}
+  *{box-sizing:border-box;margin:0;padding:0}body{background:#d8edd8}
   input,select,textarea{font-family:'DM Sans',sans-serif}
-  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#88b8e0;border-radius:2px}
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#4db860;border-radius:2px}
   .rh{transition:all .2s}.rh:hover{transform:translateX(3px);background:rgba(42,107,52,.2)!important;border-color:rgba(77,184,96,.35)!important}
   .bh{transition:all .15s}.bh:hover{filter:brightness(1.12);transform:translateY(-1px)}
   .tl{position:relative}.tl::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#c9a227,#e8c04a);border-radius:1px}
@@ -705,8 +705,8 @@ export default function BrocalaGolf(){
   return(
     <div style={{minHeight:"100vh",background:C.bg,fontFamily:"'DM Sans',sans-serif",color:C.cream,position:"relative"}}>
       <style>{css}</style>
-      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,backgroundImage:`linear-gradient(rgba(100,160,220,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(100,160,220,.1) 1px,transparent 1px)`,backgroundSize:"40px 40px"}}/>
-      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,background:"radial-gradient(ellipse 80% 50% at 50% 0%,rgba(150,200,240,.35) 0%,transparent 70%)"}}/>
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,backgroundImage:`linear-gradient(rgba(42,107,52,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(42,107,52,.08) 1px,transparent 1px)`,backgroundSize:"40px 40px"}}/>
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,background:"radial-gradient(ellipse 80% 50% at 50% 0%,rgba(77,184,96,.18) 0%,transparent 70%)"}}/>
 
       {toast&&<div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:1000,background:toastBg,backdropFilter:"blur(10px)",border:`1px solid ${toastBorder}`,borderRadius:10,padding:"12px 24px",fontSize:14,fontWeight:500,color:C.cream,boxShadow:"0 8px 30px rgba(0,0,0,.5)",whiteSpace:"nowrap",letterSpacing:.3}}>{toast.msg}</div>}
 
