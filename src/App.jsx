@@ -3,14 +3,27 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
 
 // ─── PASTE YOUR FIREBASE CONFIG HERE ────────────────────────────────────────
+const firebaseConfig = {// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "PASTE_YOUR_apiKey_HERE",
-  authDomain: "PASTE_YOUR_authDomain_HERE",
-  projectId: "PASTE_YOUR_projectId_HERE",
-  storageBucket: "PASTE_YOUR_storageBucket_HERE",
-  messagingSenderId: "PASTE_YOUR_messagingSenderId_HERE",
-  appId: "PASTE_YOUR_appId_HERE",
+  apiKey: "AIzaSyD8M0Dk3jNgL69rwJya8TONW1tUteDhjPM",
+  authDomain: "brocalagolf.firebaseapp.com",
+  projectId: "brocalagolf",
+  storageBucket: "brocalagolf.firebasestorage.app",
+  messagingSenderId: "627273296393",
+  appId: "1:627273296393:web:689d4c2aa67dd89465e6d8",
+  measurementId: "G-LCMMJ6DXHM"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);};
 // ────────────────────────────────────────────────────────────────────────────
 
 const app = initializeApp(firebaseConfig);
