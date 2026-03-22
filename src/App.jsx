@@ -34,7 +34,7 @@ const SEED_SCHEDULE = [{
 }];
 
 const C = {
-  bg:"#050e06", bgMid:"#0a1a0c", card:"#0d2010", cardMid:"#112614",
+  bg:"#ddeeff", bgMid:"#cce4f7", card:"#c0d8f0", cardMid:"#b0cce8",
   green:"#1a4d24", greenLight:"#2a6b34", greenGlow:"#3a8f44", greenBright:"#4db860",
   cream:"#f5f0e8", creamDim:"#c8bfa8", creamMuted:"#7a7060",
   gold:"#c9a227", goldLight:"#e8c04a", goldDim:"#7a5f10",
@@ -143,9 +143,9 @@ function avatarColor(n){let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const css=`
   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0}body{background:#050e06}
+  *{box-sizing:border-box;margin:0;padding:0}body{background:#ddeeff}
   input,select,textarea{font-family:'DM Sans',sans-serif}
-  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#1a4d24;border-radius:2px}
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#88b8e0;border-radius:2px}
   .rh{transition:all .2s}.rh:hover{transform:translateX(3px);background:rgba(42,107,52,.2)!important;border-color:rgba(77,184,96,.35)!important}
   .bh{transition:all .15s}.bh:hover{filter:brightness(1.12);transform:translateY(-1px)}
   .tl{position:relative}.tl::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#c9a227,#e8c04a);border-radius:1px}
@@ -172,8 +172,9 @@ function StatBox({label,value,sub,highlight}){return(<div style={{background:"rg
 
 // ── Announcement Banner ───────────────────────────────────────────────────────
 function AnnouncementBanner({announcement}){
-  const [dismissed,setDismissed]=useState(false);
-  if(!announcement?.text||dismissed) return null;
+  const [dismissedAt,setDismissedAt]=useState(null);
+  if(!announcement?.text) return null;
+  if(dismissedAt===announcement.postedAt) return null;
   const typeStyles={
     info: {bg:"rgba(26,77,36,.18)",border:"rgba(77,184,96,.3)",icon:"📢",color:C.greenBright},
     warning:{bg:"rgba(201,162,39,.12)",border:"rgba(201,162,39,.35)",icon:"⚠️",color:C.goldLight},
@@ -188,7 +189,7 @@ function AnnouncementBanner({announcement}){
         <div style={{fontSize:14,color:C.cream,lineHeight:1.6}}>{announcement.text}</div>
         <div style={{fontSize:11,color:C.creamMuted,marginTop:5}}>— {ADMIN_NAME} · {formatAgo(announcement.postedAt)}</div>
       </div>
-      <button onClick={()=>setDismissed(true)} style={{background:"none",border:"none",color:C.creamMuted,fontSize:16,cursor:"pointer",flexShrink:0,lineHeight:1,paddingTop:2}}>✕</button>
+      <button onClick={()=>setDismissedAt(announcement.postedAt)} style={{background:"none",border:"none",color:C.creamMuted,fontSize:16,cursor:"pointer",flexShrink:0,lineHeight:1,paddingTop:2}}>✕</button>
     </div>
   );
 }
@@ -405,13 +406,16 @@ function RoundCardLive({round,members,isAdmin,rxns,cmts,photo,onReact,onComment,
 }
 
 // ── Schedule Card ─────────────────────────────────────────────────────────────
-function ScheduleCard({evt,members,onRsvp,isAdmin,onDelete,compact=false}){
+function ScheduleCard({evt,members,onRsvp,isAdmin,onDelete,onEdit,compact=false}){
   const [rsvpOpen,setRsvpOpen]=useState(false);
   const [who,setWho]=useState("");
+  const [delConfirm,setDelConfirm]=useState(false);
+  const [removeWho,setRemoveWho]=useState(null);
   const days=daysUntil(evt.date),isPast=days<0;
   const dLabel=days===0?"TODAY":days===1?"TOMORROW":isPast?`${Math.abs(days)}d ago`:`${days} DAYS`;
   const dColor=days<=7&&!isPast?C.goldLight:isPast?C.creamMuted:C.greenBright;
   function doRsvp(){if(!who)return;onRsvp(evt.id,who);setWho("");setRsvpOpen(false);}
+  function doRemove(name){onRsvp(evt.id,name,"remove");setRemoveWho(null);}
   return(
     <div style={{background:compact?"rgba(13,32,16,.7)":"rgba(13,32,16,.85)",border:compact?"1px solid rgba(42,107,52,.22)":"1px solid rgba(77,184,96,.25)",borderRadius:compact?12:16,padding:compact?"14px 16px":"20px 22px",marginBottom:compact?8:12}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
@@ -420,28 +424,70 @@ function ScheduleCard({evt,members,onRsvp,isAdmin,onDelete,compact=false}){
             <div style={{fontFamily:"'Cinzel',serif",fontSize:compact?15:17,fontWeight:700,color:C.cream}}>{evt.course}</div>
             {!isPast&&<span style={{fontSize:10,fontWeight:700,letterSpacing:1,background:days<=7?"rgba(201,162,39,.15)":"rgba(26,107,52,.3)",border:days<=7?`1px solid rgba(201,162,39,.35)`:`1px solid rgba(77,184,96,.3)`,borderRadius:4,padding:"2px 8px",color:dColor}}>{dLabel}</span>}
           </div>
-          <div style={{fontSize:13,color:C.creamDim,lineHeight:2}}><span style={{marginRight:16}}>📅 {formatDateFull(evt.date)}</span><span>⏰ {formatTime(evt.time)}</span></div>
+          <div style={{fontSize:13,color:C.creamDim,lineHeight:2}}>
+            <span style={{marginRight:16}}>📅 {formatDateFull(evt.date)}</span>
+            <span>⏰ {formatTime(evt.time)}</span>
+          </div>
           {evt.notes&&<div style={{fontSize:12,color:C.creamMuted,marginTop:6,fontStyle:"italic",borderLeft:`2px solid ${C.green}`,paddingLeft:10}}>{evt.notes}</div>}
           <div style={{marginTop:10}}>
             <div style={{fontSize:10,color:C.creamMuted,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>{evt.rsvps?.length?`${evt.rsvps.length} Going`:"No RSVPs yet"}</div>
-            {(evt.rsvps||[]).map(n=><span key={n} className="rsvp-chip">{n}</span>)}
+            <div style={{display:"flex",flexWrap:"wrap",gap:0,alignItems:"center"}}>
+              {(evt.rsvps||[]).map(n=>(
+                <span key={n} className="rsvp-chip" style={{cursor:isAdmin?"pointer":"default"}} onClick={()=>isAdmin&&setRemoveWho(removeWho===n?null:n)}>{n}{isAdmin&&<span style={{marginLeft:4,opacity:.6,fontSize:10}}>✕</span>}</span>
+              ))}
+            </div>
+            {removeWho&&isAdmin&&(
+              <div style={{marginTop:8,padding:"8px 12px",background:"rgba(192,64,64,.08)",border:"1px solid rgba(192,64,64,.2)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12}}>
+                <span style={{color:"#e07070"}}>Remove {removeWho} from RSVPs?</span>
+                <div style={{display:"flex",gap:6}}>
+                  <button className="bh" onClick={()=>setRemoveWho(null)} style={{background:"rgba(255,255,255,.06)",border:"none",borderRadius:6,color:C.creamMuted,padding:"4px 10px",fontSize:11,cursor:"pointer"}}>No</button>
+                  <button className="bh" onClick={()=>doRemove(removeWho)} style={{background:"rgba(192,64,64,.2)",border:"none",borderRadius:6,color:"#e08080",padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>Remove</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
-          {!isPast&&<button className="bh" onClick={()=>setRsvpOpen(v=>!v)} style={{background:rsvpOpen?`rgba(42,107,52,.4)`:`linear-gradient(135deg,${C.green},${C.greenLight})`,border:`1px solid rgba(77,184,96,.4)`,borderRadius:9,color:C.cream,padding:"9px 16px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>{rsvpOpen?"↑ Close":"✓ RSVP"}</button>}
-          {isAdmin&&<button className="bh" onClick={()=>onDelete(evt.id)} style={{background:"rgba(192,64,64,.1)",border:"1px solid rgba(192,64,64,.2)",borderRadius:7,color:"#c07070",padding:"5px 10px",fontSize:10,cursor:"pointer"}}>DEL</button>}
+          {!isPast&&(
+            <button className="bh" onClick={()=>{setRsvpOpen(v=>!v);setDelConfirm(false);}} style={{background:rsvpOpen?`rgba(42,107,52,.4)`:`linear-gradient(135deg,${C.green},${C.greenLight})`,border:`1px solid rgba(77,184,96,.4)`,borderRadius:9,color:C.cream,padding:"9px 16px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+              {rsvpOpen?"↑ Close":"✓ RSVP"}
+            </button>
+          )}
+          {isAdmin&&(
+            <div style={{display:"flex",gap:6}}>
+              <button className="bh" onClick={()=>{onEdit(evt);setDelConfirm(false);setRsvpOpen(false);}} style={{background:"rgba(42,107,52,.2)",border:"1px solid rgba(42,107,52,.35)",borderRadius:7,color:C.greenBright,padding:"5px 10px",fontSize:10,cursor:"pointer",fontWeight:600}}>EDIT</button>
+              <button className="bh" onClick={()=>setDelConfirm(v=>!v)} style={{background:"rgba(192,64,64,.1)",border:"1px solid rgba(192,64,64,.2)",borderRadius:7,color:"#c07070",padding:"5px 10px",fontSize:10,cursor:"pointer"}}>DEL</button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Delete confirmation */}
+      {delConfirm&&(
+        <div style={{marginTop:12,padding:"11px 14px",background:"rgba(192,64,64,.08)",border:"1px solid rgba(192,64,64,.2)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <span style={{fontSize:13,color:"#c07070"}}>Delete this scheduled round?</span>
+          <div style={{display:"flex",gap:8}}>
+            <button className="bh" onClick={()=>setDelConfirm(false)} style={{background:"rgba(255,255,255,.06)",border:"none",borderRadius:7,color:C.creamMuted,padding:"6px 14px",fontSize:12,cursor:"pointer"}}>Cancel</button>
+            <button className="bh" onClick={()=>{onDelete(evt.id);setDelConfirm(false);}} style={{background:"rgba(192,64,64,.25)",border:"none",borderRadius:7,color:"#e08080",padding:"6px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>Delete</button>
+          </div>
+        </div>
+      )}
+
+      {/* RSVP panel */}
       {rsvpOpen&&(
         <div style={{marginTop:14,padding:"14px",background:"rgba(5,14,6,.8)",border:"1px solid rgba(42,107,52,.3)",borderRadius:12}}>
           <div style={{fontSize:12,color:C.creamDim,marginBottom:10}}>Who's in?</div>
-          <div style={{display:"flex",gap:10}}>
-            <select value={who} onChange={e=>setWho(e.target.value)} style={{...iStyle(false),appearance:"none",cursor:"pointer",flex:1}}>
-              <option value="">Select your name…</option>
-              {members.filter(m=>!(evt.rsvps||[]).includes(m)).map(m=><option key={m} value={m}>{m}</option>)}
-            </select>
-            <button className="bh" onClick={doRsvp} disabled={!who} style={{background:who?`linear-gradient(135deg,${C.gold},${C.goldDim})`:"rgba(60,60,60,.3)",border:"none",borderRadius:10,color:who?"#0a1a0c":C.creamMuted,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:who?"pointer":"not-allowed",whiteSpace:"nowrap",transition:"all .2s"}}>I'm In ⛳</button>
-          </div>
+          {members.filter(m=>!(evt.rsvps||[]).includes(m)).length===0?(
+            <div style={{fontSize:12,color:C.creamMuted}}>Everyone is already in! 🎉</div>
+          ):(
+            <div style={{display:"flex",gap:10}}>
+              <select value={who} onChange={e=>setWho(e.target.value)} style={{...iStyle(false),appearance:"none",cursor:"pointer",flex:1}}>
+                <option value="">Select your name…</option>
+                {members.filter(m=>!(evt.rsvps||[]).includes(m)).map(m=><option key={m} value={m}>{m}</option>)}
+              </select>
+              <button className="bh" onClick={doRsvp} disabled={!who} style={{background:who?`linear-gradient(135deg,${C.gold},${C.goldDim})`:"rgba(60,60,60,.3)",border:"none",borderRadius:10,color:who?"#0a1a0c":C.creamMuted,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:who?"pointer":"not-allowed",whiteSpace:"nowrap",transition:"all .2s"}}>I'm In ⛳</button>
+            </div>
+          )}
           {(evt.rsvps||[]).length>0&&<div style={{fontSize:11,color:C.creamMuted,marginTop:8}}>Already in: {(evt.rsvps||[]).join(", ")}</div>}
         </div>
       )}
@@ -525,6 +571,7 @@ export default function BrocalaGolf(){
   const [schedForm,   setSchedForm]   = useState(emptySchedForm());
   const [schedModal,  setSchedModal]  = useState(false);
   const [schedErrors, setSchedErrors] = useState({});
+  const [editSchedId, setEditSchedId] = useState(null);
   const [errors,      setErrors]      = useState({});
   const [notifPerm,   setNotifPerm]   = useState("default");
 
@@ -589,10 +636,31 @@ export default function BrocalaGolf(){
   async function handlePhotoUpload(roundId,dataUrl){await savePhotos({...photos,[roundId]:dataUrl});showToast("Photo added 📸");}
 
   // Schedule
-  function handleRsvp(evtId,name){saveSchedule(schedule.map(e=>e.id!==evtId?e:((e.rsvps||[]).includes(name)?e:{...e,rsvps:[...(e.rsvps||[]),name]})));showToast(`✓ ${name} is in!`);}
+  function handleRsvp(evtId,name,action){
+    const updated=schedule.map(e=>{
+      if(e.id!==evtId) return e;
+      if(action==="remove") return{...e,rsvps:(e.rsvps||[]).filter(n=>n!==name)};
+      if((e.rsvps||[]).includes(name)) return e;
+      return{...e,rsvps:[...(e.rsvps||[]),name]};
+    });
+    saveSchedule(updated);
+    if(action==="remove") showToast(`${name} removed from RSVP`,"danger");
+    else showToast(`✓ ${name} is in!`);
+  }
   function handleDeleteSchedule(id){saveSchedule(schedule.filter(e=>e.id!==id));showToast("Event removed","danger");}
+  function handleEditSched(evt){setEditSchedId(evt.id);setSchedForm({course:evt.course,date:evt.date,time:evt.time,notes:evt.notes||""});setSchedErrors({});setSchedModal(true);}
   function validateSched(f){const e={};if(!f.course.trim())e.course="Required";if(!f.date)e.date="Required";if(!f.time)e.time="Required";return e;}
-  function handleSchedSubmit(){const e=validateSched(schedForm);setSchedErrors(e);if(Object.keys(e).length)return;saveSchedule([...schedule,{...schedForm,id:Date.now().toString(),rsvps:[],createdAt:new Date().toISOString()}].sort((a,b)=>new Date(a.date)-new Date(b.date)));setSchedForm(emptySchedForm());setSchedErrors({});setSchedModal(false);showToast("Round scheduled ⛳");}
+  function handleSchedSubmit(){
+    const e=validateSched(schedForm);setSchedErrors(e);if(Object.keys(e).length)return;
+    if(editSchedId){
+      saveSchedule(schedule.map(ev=>ev.id===editSchedId?{...ev,...schedForm}:ev));
+      showToast("Round updated ✓");
+    } else {
+      saveSchedule([...schedule,{...schedForm,id:Date.now().toString(),rsvps:[],createdAt:new Date().toISOString()}].sort((a,b)=>new Date(a.date)-new Date(b.date)));
+      showToast("Round scheduled ⛳");
+    }
+    setSchedForm(emptySchedForm());setSchedErrors({});setSchedModal(false);setEditSchedId(null);
+  }
 
   // Member management
   function addMember(){const n=newMemberName.trim();if(!n||members.includes(n))return;saveMembers([...members,n]);setNewMemberName("");showToast(`${n} added to the group`);}
@@ -637,8 +705,8 @@ export default function BrocalaGolf(){
   return(
     <div style={{minHeight:"100vh",background:C.bg,fontFamily:"'DM Sans',sans-serif",color:C.cream,position:"relative"}}>
       <style>{css}</style>
-      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,backgroundImage:`linear-gradient(rgba(26,77,36,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(26,77,36,.07) 1px,transparent 1px)`,backgroundSize:"40px 40px"}}/>
-      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,background:"radial-gradient(ellipse 80% 50% at 50% 0%,rgba(26,77,36,.28) 0%,transparent 70%)"}}/>
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,backgroundImage:`linear-gradient(rgba(100,160,220,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(100,160,220,.1) 1px,transparent 1px)`,backgroundSize:"40px 40px"}}/>
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,background:"radial-gradient(ellipse 80% 50% at 50% 0%,rgba(150,200,240,.35) 0%,transparent 70%)"}}/>
 
       {toast&&<div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:1000,background:toastBg,backdropFilter:"blur(10px)",border:`1px solid ${toastBorder}`,borderRadius:10,padding:"12px 24px",fontSize:14,fontWeight:500,color:C.cream,boxShadow:"0 8px 30px rgba(0,0,0,.5)",whiteSpace:"nowrap",letterSpacing:.3}}>{toast.msg}</div>}
 
@@ -658,7 +726,7 @@ export default function BrocalaGolf(){
       {/* SCHEDULE MODAL */}
       {schedModal&&(<div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.85)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
         <div style={{background:C.card,border:"1px solid rgba(42,107,52,.3)",borderRadius:20,padding:"28px 26px",width:"100%",maxWidth:420,boxShadow:"0 24px 80px rgba(0,0,0,.8)"}}>
-          <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:700,color:C.cream,letterSpacing:2,marginBottom:20}}>SCHEDULE A ROUND</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:700,color:C.cream,letterSpacing:2,marginBottom:20}}>{editSchedId?"EDIT ROUND":"SCHEDULE A ROUND"}</div>
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
             <Field label="Course Name" error={schedErrors.course}><input value={schedForm.course} onChange={e=>setSchedForm({...schedForm,course:e.target.value})} placeholder="e.g. Juliette Falls Golf Course" style={iStyle(schedErrors.course)}/></Field>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -667,8 +735,8 @@ export default function BrocalaGolf(){
             </div>
             <Field label="Notes (optional)"><textarea value={schedForm.notes} onChange={e=>setSchedForm({...schedForm,notes:e.target.value})} placeholder="Details for the group…" rows={2} style={{...iStyle(false),resize:"none",fontFamily:"'DM Sans',sans-serif"}}/></Field>
             <div style={{display:"flex",gap:10,marginTop:4}}>
-              <button className="bh" onClick={()=>{setSchedModal(false);setSchedForm(emptySchedForm());setSchedErrors({});}} style={{flex:1,background:"rgba(255,255,255,.05)",border:"none",borderRadius:10,color:C.creamMuted,padding:"12px",fontSize:13,cursor:"pointer"}}>Cancel</button>
-              <button className="bh" onClick={handleSchedSubmit} style={{flex:1,background:`linear-gradient(135deg,${C.gold},${C.goldDim})`,border:"none",borderRadius:10,color:"#0a1a0c",padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Schedule It ⛳</button>
+              <button className="bh" onClick={()=>{setSchedModal(false);setSchedForm(emptySchedForm());setSchedErrors({});setEditSchedId(null);}} style={{flex:1,background:"rgba(255,255,255,.05)",border:"none",borderRadius:10,color:C.creamMuted,padding:"12px",fontSize:13,cursor:"pointer"}}>Cancel</button>
+              <button className="bh" onClick={handleSchedSubmit} style={{flex:1,background:`linear-gradient(135deg,${C.gold},${C.goldDim})`,border:"none",borderRadius:10,color:"#0a1a0c",padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>{editSchedId?"Save Changes":"Schedule It ⛳"}</button>
             </div>
           </div>
         </div>
@@ -720,7 +788,7 @@ export default function BrocalaGolf(){
           <div className="fi">
             <AnnouncementBanner announcement={announcement}/>
             {mostImproved&&(<div style={{background:"linear-gradient(135deg,rgba(201,162,39,.1),rgba(26,77,36,.15))",border:"1px solid rgba(201,162,39,.3)",borderRadius:14,padding:"14px 18px",marginBottom:24,display:"flex",alignItems:"center",gap:14}}><span style={{fontSize:28}}>📈</span><div><div style={{fontSize:10,color:C.creamMuted,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Most Improved Player</div><div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:700,color:C.goldLight}}>{mostImproved.player}</div><div style={{fontSize:12,color:C.creamDim,marginTop:2}}>Scoring avg improved by {mostImproved.diff.toFixed(1)} strokes</div></div><span style={{fontSize:28,marginLeft:"auto"}}>🏆</span></div>)}
-            {upcomingEvt.length>0&&(<div style={{marginBottom:28}}><SectionHeader label="NEXT ROUND" action={<button className="bh" onClick={()=>setView("schedule")} style={{background:"none",border:"none",color:C.greenBright,fontSize:11,cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>See All →</button>}/><ScheduleCard evt={upcomingEvt[0]} members={members} onRsvp={handleRsvp} isAdmin={isAdmin} onDelete={handleDeleteSchedule}/></div>)}
+            {upcomingEvt.length>0&&(<div style={{marginBottom:28}}><SectionHeader label="NEXT ROUND" action={<button className="bh" onClick={()=>setView("schedule")} style={{background:"none",border:"none",color:C.greenBright,fontSize:11,cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>See All →</button>}/><ScheduleCard evt={upcomingEvt[0]} members={members} onRsvp={handleRsvp} isAdmin={isAdmin} onDelete={handleDeleteSchedule} onEdit={handleEditSched}/></div>)}
             <div style={{marginBottom:28}}>
               <SectionHeader label="STANDINGS" action={<button className="bh" onClick={()=>setView("standings")} style={{background:"none",border:"none",color:C.greenBright,fontSize:11,cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>Full Board →</button>}/>
               {rankings.slice(0,3).map((p,i)=>{const isChamp=p.name===REIGNING_CHAMP&&p.roundCount===0,isTop=p.roundCount>0&&i===0,medal=["🥇","🥈","🥉"];return(<div key={p.name} className="rh" onClick={()=>setSelPlayer(p.name)} style={{background:isChamp||isTop?"linear-gradient(135deg,rgba(201,162,39,.09),rgba(26,77,36,.25))":"rgba(13,32,16,.75)",border:isChamp||isTop?"1px solid rgba(201,162,39,.28)":"1px solid rgba(42,107,52,.18)",borderRadius:14,padding:"13px 16px",marginBottom:7,cursor:"pointer",display:"flex",alignItems:"center",gap:12}}><div style={{width:26,textAlign:"center",flexShrink:0}}>{isChamp||isTop?<span className="sh" style={{fontSize:18}}>👑</span>:p.roundCount>0&&i<3?<span style={{fontSize:16}}>{medal[i]}</span>:<span style={{fontSize:12,color:C.creamMuted}}>—</span>}</div><div style={{width:36,height:36,borderRadius:9,flexShrink:0,background:isChamp||isTop?`linear-gradient(135deg,${C.goldDim},${C.gold})`:avatarColor(p.name),display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.cream,fontFamily:"'Cinzel',serif"}}>{initials(p.name)}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:600,fontSize:14,color:isChamp||isTop?C.goldLight:C.cream}}>{p.name}{isChamp&&<span style={{marginLeft:8,fontSize:9,background:"rgba(201,162,39,.15)",border:"1px solid rgba(201,162,39,.3)",borderRadius:4,padding:"2px 6px",color:C.gold,letterSpacing:1,verticalAlign:"middle"}}>CHAMP</span>}</div><div style={{fontSize:11,color:C.creamMuted,marginTop:2}}>{p.roundCount>0?`${p.roundCount} rounds · HCP: ${p.handicap||"—"}`:"No rounds yet"}</div></div><div style={{textAlign:"right",flexShrink:0}}>{p.avg!==null?<><div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,color:isTop||isChamp?C.goldLight:C.cream}}>{p.avg.toFixed(1)}</div><div style={{fontSize:9,color:C.creamMuted}}>AVG</div></>:<div style={{fontSize:12,color:C.creamMuted}}>—</div>}</div></div>);})}
@@ -756,8 +824,8 @@ export default function BrocalaGolf(){
               <button className="bh" onClick={()=>setSchedModal(true)} style={{background:`linear-gradient(135deg,${C.green},${C.greenLight})`,border:"1px solid rgba(77,184,96,.35)",borderRadius:10,color:C.cream,padding:"10px 16px",fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:.5,whiteSpace:"nowrap"}}>+ New Round</button>
             </div>
             {upcomingEvt.length===0&&<Empty msg="No upcoming rounds scheduled"/>}
-            {upcomingEvt.map(e=><ScheduleCard key={e.id} evt={e} members={members} onRsvp={handleRsvp} isAdmin={isAdmin} onDelete={handleDeleteSchedule}/>)}
-            {schedule.filter(e=>daysUntil(e.date)<0).length>0&&(<div style={{marginTop:28}}><div style={{fontSize:10,color:C.creamMuted,letterSpacing:2,textTransform:"uppercase",marginBottom:14}}>Past Rounds</div>{schedule.filter(e=>daysUntil(e.date)<0).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=><div key={e.id} style={{opacity:.5}}><ScheduleCard evt={e} members={members} onRsvp={handleRsvp} isAdmin={isAdmin} onDelete={handleDeleteSchedule} compact/></div>)}</div>)}
+            {upcomingEvt.map(e=><ScheduleCard key={e.id} evt={e} members={members} onRsvp={handleRsvp} isAdmin={isAdmin} onDelete={handleDeleteSchedule} onEdit={handleEditSched}/>)}
+            {schedule.filter(e=>daysUntil(e.date)<0).length>0&&(<div style={{marginTop:28}}><div style={{fontSize:10,color:C.creamMuted,letterSpacing:2,textTransform:"uppercase",marginBottom:14}}>Past Rounds</div>{schedule.filter(e=>daysUntil(e.date)<0).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=><div key={e.id} style={{opacity:.5}}><ScheduleCard evt={e} members={members} onRsvp={handleRsvp} isAdmin={isAdmin} onDelete={handleDeleteSchedule} onEdit={handleEditSched} compact/></div>)}</div>)}
           </div>
         )}
 
