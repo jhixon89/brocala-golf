@@ -549,12 +549,13 @@ function PlayerProfile({playerName,allRounds,rankings,members,onBack}){
 export default function BrocalaGolf(){
   const [rounds,      setRounds]      = useState([]);
   const [pending,     setPending]     = useState([]);
-  const [schedule,    setSchedule]    = useState([]);
+  const [schedule,    setSchedule]    = useState(SEED_SCHEDULE);
   const [reactions,   setReactions]   = useState({});
   const [comments,    setComments]    = useState([]);
   const [photos,      setPhotos]      = useState({});
   const [members,     setMembers]     = useState(DEFAULT_MEMBERS);
   const [announcement,setAnnouncement]= useState(null);
+  const [schedLoading,setSchedLoading]= useState(true);
   const [view,        setView]        = useState("home");
   const [selPlayer,   setSelPlayer]   = useState(null);
   const [loading,     setLoading]     = useState(true);
@@ -606,6 +607,7 @@ export default function BrocalaGolf(){
       const list=snap.exists()?(snap.data().list||[]):null;
       if(!list){setDoc(doc(db,"brocala","schedule"),{list:SEED_SCHEDULE});setSchedule(SEED_SCHEDULE);}
       else{if(!didInit.current.sched){prevIds.current.sched=new Set(list.map(e=>e.id));didInit.current.sched=true;}else{list.filter(e=>!prevIds.current.sched.has(e.id)).forEach(e=>triggerNotif("Round Scheduled!",`${e.course} on ${formatDate(e.date)}`));prevIds.current.sched=new Set(list.map(e=>e.id));}setSchedule(list);}
+      setSchedLoading(false);
     });
     const unsubRxn=onSnapshot(doc(db,"brocala","reactions"),snap=>{setReactions(snap.exists()?(snap.data().map||{}):{});});
     const unsubCmt=onSnapshot(doc(db,"brocala","comments"), snap=>{setComments(snap.exists()?(snap.data().list||[]):[]);});
@@ -787,7 +789,26 @@ export default function BrocalaGolf(){
           <div className="fi">
             <AnnouncementBanner announcement={announcement}/>
             {mostImproved&&(<div style={{background:"linear-gradient(135deg,rgba(201,162,39,.1),rgba(26,77,36,.15))",border:"1px solid rgba(201,162,39,.3)",borderRadius:14,padding:"14px 18px",marginBottom:24,display:"flex",alignItems:"center",gap:14}}><span style={{fontSize:28}}>📈</span><div><div style={{fontSize:10,color:C.creamMuted,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Most Improved Player</div><div style={{fontFamily:"'Cinzel',serif",fontSize:16,fontWeight:700,color:C.goldLight}}>{mostImproved.player}</div><div style={{fontSize:12,color:C.creamDim,marginTop:2}}>Scoring avg improved by {mostImproved.diff.toFixed(1)} strokes</div></div><span style={{fontSize:28,marginLeft:"auto"}}>🏆</span></div>)}
-            {upcomingEvt.length>0&&(<div style={{marginBottom:28}}><SectionHeader label="NEXT ROUND" action={<button className="bh" onClick={()=>setView("schedule")} style={{background:"none",border:"none",color:C.greenBright,fontSize:11,cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>See All →</button>}/><ScheduleCard evt={upcomingEvt[0]} members={members} onRsvp={handleRsvp} isAdmin={isAdmin} onDelete={handleDeleteSchedule} onEdit={handleEditSched}/></div>)}
+            {/* Next Round — show skeleton while loading, then real card */}
+            <div style={{marginBottom:28}}>
+              <SectionHeader label="NEXT ROUND" action={<button className="bh" onClick={()=>setView("schedule")} style={{background:"none",border:"none",color:C.greenBright,fontSize:11,cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>See All →</button>}/>
+              {schedLoading ? (
+                <div style={{background:"rgba(13,32,16,.6)",border:"1px solid rgba(42,107,52,.2)",borderRadius:16,padding:"20px 22px",marginBottom:12}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                    <div style={{width:180,height:18,borderRadius:6,background:"rgba(77,184,96,.12)"}}/>
+                    <div style={{width:60,height:16,borderRadius:4,background:"rgba(201,162,39,.1)"}}/>
+                  </div>
+                  <div style={{width:260,height:14,borderRadius:5,background:"rgba(77,184,96,.08)",marginBottom:8}}/>
+                  <div style={{width:120,height:14,borderRadius:5,background:"rgba(77,184,96,.08)"}}/>
+                </div>
+              ) : upcomingEvt.length > 0 ? (
+                <ScheduleCard evt={upcomingEvt[0]} members={members} onRsvp={handleRsvp} isAdmin={isAdmin} onDelete={handleDeleteSchedule} onEdit={handleEditSched}/>
+              ) : (
+                <div style={{background:"rgba(13,32,16,.5)",border:"1px dashed rgba(42,107,52,.25)",borderRadius:14,padding:"20px",textAlign:"center",color:C.creamMuted,fontSize:13}}>
+                  No upcoming rounds scheduled — <button onClick={()=>setView("schedule")} style={{background:"none",border:"none",color:C.greenBright,cursor:"pointer",fontSize:13,textDecoration:"underline"}}>add one</button>
+                </div>
+              )}
+            </div>
             <div style={{marginBottom:28}}>
               <SectionHeader label="STANDINGS" action={<button className="bh" onClick={()=>setView("standings")} style={{background:"none",border:"none",color:C.greenBright,fontSize:11,cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>Full Board →</button>}/>
               {rankings.slice(0,3).map((p,i)=>{const isChamp=p.name===REIGNING_CHAMP&&p.roundCount===0,isTop=p.roundCount>0&&i===0,medal=["🥇","🥈","🥉"];return(<div key={p.name} className="rh" onClick={()=>setSelPlayer(p.name)} style={{background:isChamp||isTop?"linear-gradient(135deg,rgba(201,162,39,.09),rgba(26,77,36,.25))":"rgba(13,32,16,.75)",border:isChamp||isTop?"1px solid rgba(201,162,39,.28)":"1px solid rgba(42,107,52,.18)",borderRadius:14,padding:"13px 16px",marginBottom:7,cursor:"pointer",display:"flex",alignItems:"center",gap:12}}><div style={{width:26,textAlign:"center",flexShrink:0}}>{isChamp||isTop?<span className="sh" style={{fontSize:18}}>👑</span>:p.roundCount>0&&i<3?<span style={{fontSize:16}}>{medal[i]}</span>:<span style={{fontSize:12,color:C.creamMuted}}>—</span>}</div><div style={{width:36,height:36,borderRadius:9,flexShrink:0,background:isChamp||isTop?`linear-gradient(135deg,${C.goldDim},${C.gold})`:avatarColor(p.name),display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.cream,fontFamily:"'Cinzel',serif"}}>{initials(p.name)}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:600,fontSize:14,color:isChamp||isTop?C.goldLight:C.cream}}>{p.name}{isChamp&&<span style={{marginLeft:8,fontSize:9,background:"rgba(201,162,39,.15)",border:"1px solid rgba(201,162,39,.3)",borderRadius:4,padding:"2px 6px",color:C.gold,letterSpacing:1,verticalAlign:"middle"}}>CHAMP</span>}</div><div style={{fontSize:11,color:C.creamMuted,marginTop:2}}>{p.roundCount>0?`${p.roundCount} rounds · HCP: ${p.handicap||"—"}`:"No rounds yet"}</div></div><div style={{textAlign:"right",flexShrink:0}}>{p.avg!==null?<><div style={{fontFamily:"'Cinzel',serif",fontSize:20,fontWeight:700,color:isTop||isChamp?C.goldLight:C.cream}}>{p.avg.toFixed(1)}</div><div style={{fontSize:9,color:C.creamMuted}}>AVG</div></>:<div style={{fontSize:12,color:C.creamMuted}}>—</div>}</div></div>);})}
