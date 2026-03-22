@@ -585,8 +585,10 @@ export default function BrocalaGolf(){
   const [annForm, setAnnForm] = useState({title:"",text:"",type:"info"});
   const [annPreview, setAnnPreview] = useState(false);
 
-  const didInit = useRef({rounds:false,sched:false});
-  const prevIds = useRef({rounds:new Set(),sched:new Set()});
+  const didInit   = useRef({rounds:false,sched:false});
+  const prevIds   = useRef({rounds:new Set(),sched:new Set()});
+  const roundsRef  = useRef([]);
+  const pendingRef = useRef([]);
 
   function emptyForm(){return{playerName:"",partnerName:"",date:new Date().toISOString().split("T")[0],course:"",score:"",holes:"18",tees:"blue",courseRating:"",slope:"",notes:""};}
   function emptySchedForm(){return{course:"",date:"",time:"10:00",notes:""};}
@@ -600,9 +602,14 @@ export default function BrocalaGolf(){
       const list=snap.exists()?(snap.data().list||[]):[];
       if(!didInit.current.rounds){prevIds.current.rounds=new Set(list.map(r=>r.id));didInit.current.rounds=true;}
       else{list.filter(r=>!prevIds.current.rounds.has(r.id)).forEach(r=>triggerNotif("Round Approved!",`${r.playerName} shot ${r.score} at ${r.course}`));prevIds.current.rounds=new Set(list.map(r=>r.id));}
+      roundsRef.current=list;
       setRounds(list);setLoading(false);
     });
-    const unsubP=onSnapshot(doc(db,"brocala","pending"),snap=>{setPending(snap.exists()?(snap.data().list||[]):[]);});
+    const unsubP=onSnapshot(doc(db,"brocala","pending"),snap=>{
+      const list=snap.exists()?(snap.data().list||[]):[];
+      pendingRef.current=list;
+      setPending(list);
+    });
     const unsubS=onSnapshot(doc(db,"brocala","schedule"),snap=>{
       const list=snap.exists()?(snap.data().list||[]):null;
       if(!list){setDoc(doc(db,"brocala","schedule"),{list:SEED_SCHEDULE});setSchedule(SEED_SCHEDULE);}
@@ -620,8 +627,8 @@ export default function BrocalaGolf(){
     return()=>{unsubR();unsubP();unsubS();unsubRxn();unsubCmt();unsubPho();unsubMem();unsubAnn();};
   },[]);
 
-  async function saveRounds(nr)     {setRounds(nr);     await setDoc(doc(db,"brocala","rounds"),      {list:nr});}
-  async function savePending(np)    {setPending(np);    await setDoc(doc(db,"brocala","pending"),     {list:np});}
+  async function saveRounds(nr)     {roundsRef.current=nr;  setRounds(nr);     await setDoc(doc(db,"brocala","rounds"),      {list:nr});}
+  async function savePending(np)    {pendingRef.current=np; setPending(np);    await setDoc(doc(db,"brocala","pending"),     {list:np});}
   async function saveSchedule(ns)   {setSchedule(ns);   await setDoc(doc(db,"brocala","schedule"),    {list:ns});}
   async function saveReactions(rx)  {setReactions(rx);  await setDoc(doc(db,"brocala","reactions"),   {map:rx});}
   async function saveComments(cm)   {setComments(cm);   await setDoc(doc(db,"brocala","comments"),    {list:cm});}
@@ -678,11 +685,19 @@ export default function BrocalaGolf(){
 
   // Round form
   function validate(f){const e={};if(!f.playerName.trim())e.playerName="Required";if(!f.partnerName.trim())e.partnerName="Required";else if(f.playerName.trim().toLowerCase()===f.partnerName.trim().toLowerCase())e.partnerName="Must be a different member";if(!f.date)e.date="Required";if(!f.course.trim())e.course="Required";if(!f.score||isNaN(f.score)||+f.score<18||+f.score>200)e.score="Valid score: 18–200";if(f.tees!=="blue")e.tees="Only Blue Tee rounds accepted";if(f.courseRating&&(isNaN(f.courseRating)||+f.courseRating<60||+f.courseRating>80))e.courseRating="60–80";if(f.slope&&(isNaN(f.slope)||+f.slope<55||+f.slope>155))e.slope="55–155";return e;}
-  function handleSubmit(){const e=validate(form);setErrors(e);if(Object.keys(e).length)return;savePending([...pending,{...form,id:Date.now().toString(),score:+form.score,holes:+form.holes,courseRating:form.courseRating||"",slope:form.slope||"",submittedAt:new Date().toISOString(),status:"pending"}]);setForm(emptyForm());setErrors({});showToast("Submitted — awaiting John's approval ⏳","pending");setView("home");}
-  function handleEditSave(){const e=validate(form);setErrors(e);if(Object.keys(e).length)return;saveRounds(rounds.map(r=>r.id===editRound.id?{...r,...form,score:+form.score,holes:+form.holes}:r));setEditRound(null);setForm(emptyForm());setErrors({});showToast("Round updated ✓");setView("admin");}
-  function approveRound(id){const r=pending.find(p=>p.id===id);if(!r)return;const a={...r,approvedAt:new Date().toISOString()};delete a.status;delete a.rejectedAt;delete a.rejectNote;saveRounds([...rounds,a]);savePending(pending.filter(p=>p.id!==id));showToast(`✓ Approved — ${r.playerName}`);}
-  function rejectRound(id){savePending(pending.map(p=>p.id===id?{...p,status:"rejected",rejectedAt:new Date().toISOString(),rejectNote:rejectNote.trim()}:p));setRejectId(null);setRejectNote("");showToast("Round rejected","danger");}
-  function handleDelete(id){saveRounds(rounds.filter(r=>r.id!==id));setDelConfirm(null);showToast("Round removed","danger");}
+  function handleSubmit(){const e=validate(form);setErrors(e);if(Object.keys(e).length)return;const np=[...pendingRef.current,{...form,id:Date.now().toString(),score:+form.score,holes:+form.holes,courseRating:form.courseRating||"",slope:form.slope||"",submittedAt:new Date().toISOString(),status:"pending"}];savePending(np);setForm(emptyForm());setErrors({});showToast("Submitted — awaiting John's approval ⏳","pending");setView("home");}
+  function handleEditSave(){const e=validate(form);setErrors(e);if(Object.keys(e).length)return;const nr=roundsRef.current.map(r=>r.id===editRound.id?{...r,...form,score:+form.score,holes:+form.holes}:r);saveRounds(nr);setEditRound(null);setForm(emptyForm());setErrors({});showToast("Round updated ✓");setView("admin");}
+  function approveRound(id){
+    const r=pendingRef.current.find(p=>p.id===id);if(!r)return;
+    const a={...r,approvedAt:new Date().toISOString()};
+    delete a.status;delete a.rejectedAt;delete a.rejectNote;
+    const nr=[...roundsRef.current,a];
+    const np=pendingRef.current.filter(p=>p.id!==id);
+    saveRounds(nr);savePending(np);
+    showToast(`✓ Approved — ${r.playerName}`);
+  }
+  function rejectRound(id){const np=pendingRef.current.map(p=>p.id===id?{...p,status:"rejected",rejectedAt:new Date().toISOString(),rejectNote:rejectNote.trim()}:p);savePending(np);setRejectId(null);setRejectNote("");showToast("Round rejected","danger");}
+  function handleDelete(id){const nr=roundsRef.current.filter(r=>r.id!==id);saveRounds(nr);setDelConfirm(null);showToast("Round removed","danger");}
   function startEdit(round){setEditRound(round);setForm({playerName:round.playerName,partnerName:round.partnerName,date:round.date,course:round.course,score:round.score.toString(),holes:round.holes.toString(),tees:"blue",courseRating:round.courseRating||"",slope:round.slope||"",notes:round.notes||""});setErrors({});setView("submit");}
 
   const rankings     = getRankings(rounds,members);
